@@ -1,0 +1,724 @@
+body {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.footer .icon-link {
+  font-size: 25px;
+  color: #000;
+}
+
+.link-block a {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.teaser .hero-body {
+  padding-top: 0;
+  padding-bottom: 3rem;
+}
+
+.teaser {
+  font-family: 'Google Sans', sans-serif;
+}
+
+.publication-title {
+  font-family: 'Google Sans', sans-serif;
+}
+
+.publication-authors {
+  font-family: 'Google Sans', sans-serif;
+}
+
+.publication-authors a {
+  color: hsl(204, 86%, 53%) !important;
+}
+
+.publication-authors a:hover {
+  text-decoration: underline;
+}
+
+.author-block {
+  display: inline-block;
+}
+
+.figure-caption {
+  margin-top: 10px;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.ablation-image {
+  max-width: 1200px;
+}
+
+/* Image carousel */
+.image-carousel {
+  position: relative;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.container--carousel-wide {
+  max-width: 1050px;
+  /* Sits outside .hero-body so add the same horizontal breathing room
+     that Bulma sections/hero-bodies use, otherwise the carousel bleeds
+     to the screen edges on mobile while the rest of the page is padded. */
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Bulma's .columns adds negative horizontal margins that would pull the
+   carousel ~12px wider than its container on each side, partially undoing
+   the padding above. Neutralise them inside this wrapper. */
+.container--carousel-wide > .columns {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.image-carousel--comparison {
+  max-width: 1050px;
+}
+
+.image-carousel--small {
+  max-width: 600px;
+}
+
+.image-carousel .carousel-track-container {
+  overflow: hidden;
+  width: calc(100% - 112px);
+  margin: 0 auto;
+}
+
+.image-carousel .carousel-track {
+  display: flex;
+  transition: transform 0.3s ease;
+}
+
+.image-carousel .carousel-slide {
+  flex: 0 0 100%;
+  min-width: 100%;
+}
+
+.image-carousel .carousel-slide img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 5px;
+}
+
+.image-carousel .carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #363636;
+  font-size: 1rem;
+  transition: background 0.2s, transform 0.2s;
+  z-index: 2;
+}
+
+.image-carousel .carousel-nav:hover {
+  background: #fff;
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+}
+
+.image-carousel .carousel-prev {
+  left: 12px;
+}
+
+.image-carousel .carousel-next {
+  right: 12px;
+}
+
+.image-carousel .carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.image-carousel .carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: #dbdbdb;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.image-carousel .carousel-dot:hover {
+  background: #b5b5b5;
+}
+
+.image-carousel .carousel-dot.is-active {
+  background: hsl(204, 86%, 53%);
+  transform: scale(1.2);
+}
+
+.image-carousel .carousel-caption {
+  margin-top: 10px;
+  font-size: 1.15rem;
+  color: #444;
+}
+
+/* Per-slide example header: "Reference" + 3 prompts above each example image */
+.image-carousel .example-slide img {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.example-header {
+  display: grid;
+  /* Column widths chosen to center each label on its underlying image
+     (image centers measured at ~12.7%, 40.0%, 63.5%, 87.0% of slide width). */
+  grid-template-columns: 25% 29% 20% 26%;
+  gap: 0;
+  padding: 10px 0 8px;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-bottom: none;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  align-items: stretch;
+}
+
+.example-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px 6px;
+  min-height: 54px;
+}
+
+.example-cell--ref {
+  border-right: 1px dashed #d8d8d8;
+}
+
+.example-label {
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: hsl(204, 86%, 53%);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.example-prompt {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: #2b2b2b;
+  font-style: italic;
+}
+
+.example-prompt::before { content: "\201C"; }
+.example-prompt::after { content: "\201D"; }
+
+/* Attention visualization figure: column labels aligned to image columns */
+.attn-fig {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.attn-fig-header {
+  display: grid;
+  /* Column widths chosen so each label is centered on its underlying image
+     (image centers measured at ~11.25%, 35.75%, 61.62%, 88.25% of width). */
+  grid-template-columns: 23% 26.5% 25.5% 25%;
+  margin-bottom: 8px;
+}
+
+.attn-fig-cell {
+  text-align: center;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2b2b2b;
+  letter-spacing: 0.2px;
+}
+
+.attn-fig-cell--muted {
+  color: #888;
+  font-weight: 400;
+}
+
+/* Nudge the "Low frequencies only" label a touch to the right
+   so it sits over the center of the rightmost attention map. */
+.attn-fig-cell:last-child {
+  transform: translateX(10px);
+}
+
+@media (max-width: 720px) {
+  .attn-fig-cell { font-size: 0.72rem; letter-spacing: 0; }
+}
+
+/* Timestep-scheduling figure: 4 column labels aligned to image panels.
+   Panel centers measured at ~11.5%, 40.9%, 64.7%, 88.4% of image width
+   (one wide gap between Reference and the methods, narrow gaps between
+   the three method columns). */
+.time-fig {
+  max-width: 70%;
+  margin: 0 auto;
+}
+
+.time-fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.time-fig-header {
+  position: relative;
+  height: 26px;
+  margin-bottom: 6px;
+}
+
+.time-fig-cell {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #2b2b2b;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.time-fig-cell--muted {
+  color: #888;
+  font-weight: 400;
+}
+
+@media (max-width: 900px) {
+  .time-fig { max-width: 95%; }
+  .time-fig-header { height: 22px; }
+  .time-fig-cell { font-size: 0.72rem; letter-spacing: 0; }
+}
+
+@media (max-width: 600px) {
+  .time-fig-header { height: 18px; }
+  .time-fig-cell { font-size: 0.6rem; }
+}
+
+/* Interactive style-knob (s_lf slider) */
+.knob-widget {
+  max-width: 880px;
+  margin: 25px auto 0;
+}
+
+/* Reference selector: clickable thumbnails for switching reference examples. */
+.knob-references {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.knob-ref-thumb {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+  width: 78px;
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.knob-ref-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+  display: block;
+}
+
+.knob-ref-thumb:hover {
+  border-color: #b5b5b5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.knob-ref-thumb.is-active {
+  border-color: hsl(204, 86%, 53%);
+  box-shadow: 0 0 0 2px rgba(50, 152, 220, 0.2);
+}
+
+.knob-references-hint {
+  text-align: center;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0 0 14px;
+}
+
+.knob-images {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.knob-image {
+  margin: 0;
+  text-align: center;
+}
+
+.knob-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 6px;
+  background: #f3f3f3;
+}
+
+.knob-image figcaption {
+  margin-top: 8px;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.95rem;
+  color: #444;
+  letter-spacing: 0.2px;
+}
+
+.knob-control {
+  margin: 26px auto 0;
+  max-width: 720px;
+  text-align: center;
+}
+
+.knob-label {
+  display: block;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.05rem;
+  color: #2b2b2b;
+  margin-bottom: 10px;
+}
+
+.knob-value {
+  font-weight: 600;
+  color: hsl(204, 86%, 53%);
+  font-variant-numeric: tabular-nums;
+}
+
+.knob-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    hsl(204, 86%, 53%) 0%,
+    hsl(204, 86%, 53%) var(--knob-pct, 0%),
+    #dbdbdb var(--knob-pct, 0%),
+    #dbdbdb 100%
+  );
+  outline: none;
+  margin: 0;
+}
+
+.knob-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid hsl(204, 86%, 53%);
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s;
+}
+
+.knob-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+.knob-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid hsl(204, 86%, 53%);
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.knob-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.85rem;
+  color: #888;
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 600px) {
+  .knob-images { gap: 10px; }
+  .knob-image figcaption { font-size: 0.8rem; }
+  .knob-label { font-size: 0.95rem; }
+}
+
+@media (max-width: 720px) {
+  .example-header { padding: 6px 2px 4px; gap: 3px; }
+  .example-cell { min-height: 44px; padding: 2px 3px; }
+  .example-label { font-size: 0.65rem; letter-spacing: 0.3px; }
+  .example-prompt { font-size: 0.6rem; line-height: 1.15; }
+}
+
+/* Mobile: the comparison-style example carousel is dominated by side nav
+   arrows by default (112px reserved for them). On phones that leaves the
+   4-up slide image cramped into ~200px. Shrink the arrows, tuck them to
+   the edges, and give the slide more horizontal room. */
+@media (max-width: 768px) {
+  .image-carousel--comparison .carousel-nav {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  }
+  .image-carousel--comparison .carousel-prev { left: 0; }
+  .image-carousel--comparison .carousel-next { right: 0; }
+  .image-carousel--comparison .carousel-track-container {
+    width: calc(100% - 68px);
+  }
+}
+
+@media (max-width: 480px) {
+  .image-carousel--comparison .carousel-nav {
+    width: 26px;
+    height: 26px;
+    font-size: 0.7rem;
+  }
+  .image-carousel--comparison .carousel-track-container {
+    width: calc(100% - 60px);
+  }
+  .example-header { padding: 4px 1px 3px; }
+  .example-cell { min-height: 38px; padding: 1px 2px; }
+  .example-label { font-size: 0.55rem; }
+  .example-prompt { font-size: 0.52rem; line-height: 1.1; }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Reference-copying figure: 4 panels (Reference, No-share, Full-share,    */
+/* Ours) shown side-by-side with captions.                                 */
+/* ---------------------------------------------------------------------- */
+.copying-figure {
+  margin: 25px auto 0;
+  max-width: 1050px;
+}
+
+.copying-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.copying-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.copying-img-wrap {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f3f3f3;
+  border: 1px solid #ececec;
+}
+
+.copying-img-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.copying-cell--ref .copying-img-wrap {
+  border-color: hsl(204, 70%, 70%);
+  box-shadow: 0 0 0 1px hsl(204, 70%, 80%);
+}
+
+.copying-cell--ours .copying-img-wrap {
+  border-color: hsl(141, 53%, 60%);
+  box-shadow: 0 0 0 1px hsl(141, 53%, 75%);
+}
+
+.copying-cell figcaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.copying-tag {
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.2px;
+  color: #2b2b2b;
+}
+
+.copying-cell--ref .copying-tag { color: hsl(204, 86%, 45%); }
+.copying-cell--ours .copying-tag { color: hsl(141, 53%, 38%); }
+
+.copying-prompt {
+  font-family: 'Google Sans', sans-serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: #666;
+  line-height: 1.25;
+}
+
+@media (max-width: 720px) {
+  .copying-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .copying-tag { font-size: 0.78rem; }
+  .copying-prompt { font-size: 0.68rem; }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Method comparison carousel (ours vs. StyleAligned / B-LoRA / etc.)     */
+/* Each slide: a reference image on the left, then a 5-method × 3-prompt  */
+/* grid of result images on the right with column headers + per-row       */
+/* prompt captions.                                                        */
+/* ---------------------------------------------------------------------- */
+.comparison-slide {
+  display: grid;
+  grid-template-columns: minmax(0, 30%) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  padding: 12px 12px 14px;
+  background: #fafafa;
+  border: 1px solid #ececec;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.comparison-ref {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-right: 6px;
+  border-right: 1px dashed #d8d8d8;
+}
+
+/* Override the default carousel-slide img rule so each cell sizes itself. */
+.image-carousel .comparison-slide img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
+.comparison-ref img {
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+}
+
+.comparison-ref-label {
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: hsl(204, 86%, 53%);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.comparison-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.comparison-headers {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 0 0 4px;
+  border-bottom: 1px solid #ececec;
+}
+
+.comparison-headers > div {
+  font-family: 'Google Sans', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #2b2b2b;
+  text-align: center;
+  letter-spacing: 0.1px;
+}
+
+.comparison-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comparison-prompt {
+  font-family: 'Google Sans', sans-serif;
+  font-style: italic;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: #555;
+  text-align: center;
+  padding: 1px 4px;
+}
+.comparison-prompt::before { content: "\201C"; }
+.comparison-prompt::after  { content: "\201D"; }
+
+.comparison-results {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  min-width: 0;
+}
+
+.comparison-cell {
+  min-width: 0;
+  line-height: 0;
+}
+
+@media (max-width: 900px) {
+  .comparison-slide { grid-template-columns: minmax(0, 26%) minmax(0, 1fr); padding: 8px; gap: 10px; }
+  .comparison-headers > div { font-size: 0.62rem; letter-spacing: 0.1px; }
+  .comparison-prompt { font-size: 0.6rem; }
+  .comparison-ref-label { font-size: 0.7rem; }
+}
+
+@media (max-width: 600px) {
+  /* On phones, stack reference above the grid so result cells are usable. */
+  .comparison-slide { grid-template-columns: 1fr; gap: 6px; }
+  .comparison-ref { padding-right: 0; border-right: none; border-bottom: 1px dashed #d8d8d8; padding-bottom: 6px; max-width: 60%; margin: 0 auto; }
+  .comparison-headers > div { font-size: 0.55rem; }
+  .comparison-prompt { font-size: 0.55rem; }
+  .comparison-results, .comparison-headers { gap: 2px; }
+}

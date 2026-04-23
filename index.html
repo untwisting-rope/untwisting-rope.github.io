@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="Untwisting RoPE: Frequency Control for Shared Attention in Diffusion Transformers. A frequency-aware modulation of Rotary Positional Embeddings that enables training-free, controllable style-aligned generation in DiTs.">
+  <meta name="keywords" content="RoPE, Diffusion Transformers, Style Transfer, Style-Aligned Generation, Shared Attention, Flux, MMDiT, Positional Encoding">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Untwisting RoPE: Frequency Control for Shared Attention in DiTs</title>
+
+  <link rel="icon" type="image/png" href="./static/images/favicon.png">
+  <link rel="apple-touch-icon" href="./static/images/favicon.png">
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/index.js"></script>
+</head>
+<body>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">
+            Untwisting RoPE: Frequency Control for Shared Attention in DiTs
+          </h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Anonymous Authors</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <div class="has-text-centered">
+        <img src="./static/images/teaser.jpg" alt="teaser" width="100%">
+      </div>
+      <h2 class="subtitle has-text-centered" style="margin-top: 15px;">
+        <b>TL;DR:</b> Shared attention in RoPE-based diffusion transformers often collapses into <i>reference copying</i>,
+        reproducing the reference image instead of transferring its style.
+        We trace this back to RoPE's high-frequency components and introduce a simple,
+        training-free <b>frequency-aware modulation</b> that restores meaningful shared attention
+        and enables controllable style-aligned generation.
+      </h2>
+    </div>
+  </div>
+
+  <div class="container container--carousel-wide">
+    <div class="columns is-centered">
+        <div class="content has-text-centered" style="margin-top: 20px;">
+          <div class="image-carousel image-carousel--comparison" id="carousel-results">
+            <button type="button" class="carousel-nav carousel-prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+            <div class="carousel-track-container">
+              <div class="carousel-track">
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">The Cathedral of Santa Maria del Fiore</span></div>
+                    <div class="example-cell"><span class="example-prompt">The Statue of Liberty</span></div>
+                    <div class="example-cell"><span class="example-prompt">The Colosseum</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide1.png" alt="Painting style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">Two knights playing chess</span></div>
+                    <div class="example-cell"><span class="example-prompt">A man eating pizza</span></div>
+                    <div class="example-cell"><span class="example-prompt">A clown dancing</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide2.png" alt="Medieval painting style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A koala bear sitting on a tree</span></div>
+                    <div class="example-cell"><span class="example-prompt">A wolf howling at the moon</span></div>
+                    <div class="example-cell"><span class="example-prompt">A monkey swinging from a branch</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide3.png" alt="Ceramic art style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A woman playing guitar</span></div>
+                    <div class="example-cell"><span class="example-prompt">The Seattle Space Needle</span></div>
+                    <div class="example-cell"><span class="example-prompt">A cat playing with a ball of yarn</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide4.png" alt="Color pencil drawing style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A majestic lion</span></div>
+                    <div class="example-cell"><span class="example-prompt">A beautiful butterfly</span></div>
+                    <div class="example-cell"><span class="example-prompt">A scenic waterfall</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide5.png" alt="Paper-cut art style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">The New York skyline</span></div>
+                    <div class="example-cell"><span class="example-prompt">An ice skater performing a jump</span></div>
+                    <div class="example-cell"><span class="example-prompt">A woman reading a book in a park</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide6.png" alt="Impressionist palette-knife style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A marathon runner</span></div>
+                    <div class="example-cell"><span class="example-prompt">A fruit basket on a table</span></div>
+                    <div class="example-cell"><span class="example-prompt">Two kittens playing</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide7.png" alt="Childlike crayon style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A bicycle</span></div>
+                    <div class="example-cell"><span class="example-prompt">A seashell</span></div>
+                    <div class="example-cell"><span class="example-prompt">A swan</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide8.png" alt="White chalk on blackboard">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A fireman</span></div>
+                    <div class="example-cell"><span class="example-prompt">A wooden house</span></div>
+                    <div class="example-cell"><span class="example-prompt">A gold chest</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide9.png" alt="Minimal vector art style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A pine tree</span></div>
+                    <div class="example-cell"><span class="example-prompt">A pineapple</span></div>
+                    <div class="example-cell"><span class="example-prompt">An eagle in flight</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide10.png" alt="Stained glass style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A dog catching a frisbee</span></div>
+                    <div class="example-cell"><span class="example-prompt">A bear eating honey</span></div>
+                    <div class="example-cell"><span class="example-prompt">A man riding a bicycle</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide11.png" alt="Minimal origami style">
+                </div>
+
+                <div class="carousel-slide example-slide">
+                  <div class="example-header">
+                    <div class="example-cell example-cell--ref"><span class="example-label">Reference</span></div>
+                    <div class="example-cell"><span class="example-prompt">A firefighter figurine</span></div>
+                    <div class="example-cell"><span class="example-prompt">A doctor figurine</span></div>
+                    <div class="example-cell"><span class="example-prompt">A police woman figurine</span></div>
+                  </div>
+                  <img src="./static/images/carousel_examples/examples/Slide12.png" alt="Funko pop style">
+                </div>
+
+              </div>
+            </div>
+            <button type="button" class="carousel-nav carousel-next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+            <div class="carousel-dots" id="carousel-results-dots"></div>
+            <p class="figure-caption carousel-caption">""</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Positional encodings are essential to transformer-based generative models,
+            yet their behavior in multimodal and attention-sharing settings is not fully understood.
+            In this work, we present a principled analysis of <b>Rotary Positional Embeddings (RoPE)</b>,
+            showing that RoPE naturally decomposes into frequency components with distinct positional sensitivities.
+          </p>
+          <p>
+            We demonstrate that this frequency structure explains why shared-attention mechanisms,
+            where a target image is generated while attending to tokens from a reference image,
+            can lead to <i>reference copying</i>, in which the model reproduces content from the reference
+            instead of extracting only its stylistic cues.
+            Our analysis reveals that the high-frequency components of RoPE dominate the attention computation,
+            forcing queries to attend mainly to spatially aligned reference tokens
+            and thereby inducing this unintended copying behavior.
+          </p>
+          <p>
+            Building on these insights, we introduce a method for selectively modulating RoPE's frequency bands
+            so that attention reflects semantic similarity rather than strict positional alignment.
+            Applied to modern transformer-based diffusion architectures, where all tokens share attention,
+            this modulation restores stable and meaningful shared attention.
+            As a result, it enables effective control over the degree of style transfer versus content copying,
+            yielding a proper style-aligned generation process in which stylistic attributes
+            are transferred without duplicating reference content.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+    <!-- What is RoPE? -->
+    <div class="columns is-centered" style="margin-top: 30px;">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">A Quick Look at RoPE</h2>
+        <div class="has-text-centered" style="margin-top: 20px;">
+          <img src="./static/images/rope_figure_1D_3.jpg" alt="RoPE overview" width="60%">
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            Transformers are permutation-equivariant, so position must be injected explicitly.
+            Modern diffusion transformers such as Flux do this with <b>Rotary Positional Embeddings (RoPE)</b>:
+            each query and key vector is split into 2-dimensional chunks, and each chunk is rotated by an angle
+            proportional to the token's position. The angular frequency \(\theta_d\) varies geometrically across chunks,
+            from very high to very low.
+          </p>
+          <p>
+            A key property of RoPE is that the inner product between a rotated query and a rotated key depends only on
+            the <i>relative</i> displacement between their positions. This is what gives RoPE its locality:
+            two tokens at very different positions tend to have a smaller inner product, and therefore lower attention.
+            But, as we show next, this locality is not uniform across the embedding &mdash; some chunks of RoPE care a lot
+            about position, and others barely at all.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ What is RoPE? -->
+    <!-- Reference Copying -->
+    <div class="columns is-centered" style="margin-top: 50px;">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Shared Attention &amp; the Reference Copying Problem</h2>
+        <div class="content has-text-justified" style="margin-top: 15px;">
+          <p>
+            One of the most useful tricks in  diffusion models is <b>shared attention</b>:
+            tokens of a target image are allowed to attend not only to themselves, but also to tokens of a
+            <i>reference</i> image. This unlocks training-free image manipulation tasks &mdash; appearance transfer,
+            style transfer, reference-based editing &mdash; by implicitly aligning semantic regions between the two
+            images. A representative use case is <i>style-aligned generation</i>
+            (<a href="https://style-aligned-gen.github.io/">StyleAligned</a>): generate a set of images that share
+            a consistent visual style while depicting different content.
+          </p>
+          <p>
+            While working on UNet based diffusion models, translating this idea to RoPE-based diffusion transformers is surprisingly fragile.
+            Because target and reference tokens are placed on the <i>same</i> positional grid, RoPE's locality bias
+            kicks in: each target query is pulled toward the reference token sitting at the
+            <i>same spatial position</i>. Instead of borrowing style, the model ends up copying content.
+          </p>
+        </div>
+        <figure class="copying-figure">
+          <div class="copying-grid">
+            <div class="copying-cell copying-cell--ref">
+              <div class="copying-img-wrap">
+                <img src="./static/images/copying_example/reference.jpg" alt="Reference: a wooden bull figurine">
+              </div>
+              <figcaption>
+                <span class="copying-tag">Reference</span>
+                <span class="copying-prompt">A wooden bull figurine</span>
+              </figcaption>
+            </div>
+            <div class="copying-cell">
+              <div class="copying-img-wrap">
+                <img src="./static/images/copying_example/no.jpg" alt="Target generated without shared attention">
+              </div>
+              <figcaption>
+                <span class="copying-tag">No shared attention</span>
+                <span class="copying-prompt">styles don't match</span>
+              </figcaption>
+            </div>
+            <div class="copying-cell">
+              <div class="copying-img-wrap">
+                <img src="./static/images/copying_example/full.jpg" alt="Target generated with full shared attention (reference copying)">
+              </div>
+              <figcaption>
+                <span class="copying-tag">Full shared attention</span>
+                <span class="copying-prompt">copies the reference</span>
+              </figcaption>
+            </div>
+            <div class="copying-cell copying-cell--ours">
+              <div class="copying-img-wrap">
+                <img src="./static/images/copying_example/ours.jpg" alt="Target generated with our method: a wooden giraffe in the bull's style">
+              </div>
+              <figcaption>
+                <span class="copying-tag">Ours</span>
+                <span class="copying-prompt">style transferred, content preserved</span>
+              </figcaption>
+            </div>
+          </div>
+        </figure>
+        <div class="content has-text-justified">
+
+            So the question is: <i>why</i> does RoPE pull attention toward spatially aligned tokens so aggressively,
+            and can we surgically tame it without throwing positional information away?
+            For that, we need to look at RoPE one frequency band at a time.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Reference Copying -->
+    <!-- Frequency Bands -->
+    <div class="columns is-centered" style="margin-top: 50px;">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Frequency Bands of RoPE</h2>
+        <div class="has-text-centered" style="margin-top: 20px;">
+          <img src="./static/images/rope_plot.png" alt="Mean attention similarity vs. positional shift across RoPE frequency bands" width="80%">
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            RoPE's per-chunk angular frequency \(\theta_d\) follows a geometric series ranging from \(1\) down to \(1/10000\).
+            Plotting the mean attention similarity between two identical vectors as a function of their positional shift \(\Delta\),
+            split by frequency band, reveals a striking picture: <b>high-frequency components</b> drop sharply with even
+            small displacements (strong locality), while <b>low-frequency components</b> are nearly insensitive to position
+            (global, semantic interactions).
+          </p>
+        </div>
+        <div class="has-text-centered" style="margin-top: 25px;">
+          <div class="attn-fig">
+            <div class="attn-fig-header">
+              <div class="attn-fig-cell attn-fig-cell--muted">Query</div>
+              <div class="attn-fig-cell">All frequencies</div>
+              <div class="attn-fig-cell">High frequencies only</div>
+              <div class="attn-fig-cell">Low frequencies only</div>
+            </div>
+            <img src="./static/images/attention_visualization.jpg" alt="Attention visualization with high vs. low frequency RoPE components" width="100%">
+          </div>
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            We see the same effect inside Flux. Splitting RoPE into high- and low-frequency subsets and zeroing the rest,
+            we visualize the attention from selected query points (red dots).
+            With only high-frequency components, attention concentrates on positionally aligned tokens.
+            With only low-frequency components, attention becomes global and follows <i>semantic</i> structure.
+            The same trend holds for cross-image attention: scaling down the high-frequency components of the reference keys
+            shifts the model from positional copying toward semantically aligned attention.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Frequency Bands -->
+    <!-- Method -->
+    <div class="columns is-centered" style="margin-top: 50px;">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Frequency-Aware Modulation</h2>
+        <div class="content has-text-justified" style="margin-top: 20px;">
+          <p>
+            Our fix is to <b>continuously modulate</b> RoPE's frequency bands on the reference keys: attenuate the
+            high frequencies (\(s_{hf}<1\)) to break the positional dominance that causes copying, and amplify the
+            low frequencies (\(s_{lf}>1\)) to encourage global, semantic cross-image attention.
+          </p>
+          <p>
+            Concretely, for each RoPE chunk \(d\) we set
+            \[
+              s_d = s_{hf} + (s_{lf} - s_{hf})\,\tilde{d}^{\,\beta},
+              \qquad \tilde{d} = \frac{d}{D/2 - 1},
+            \]
+            This polynomial schedule transitions smoothly across the frequency
+            spectrum, keeping attention stable. The two scalars \(s_{hf}\) and \(s_{lf}\) are the only knobs of the
+            method &mdash; together they give a continuous handle on the tradeoff between structural fidelity and
+            free-form style transfer.
+          </p>
+        </div>
+  
+
+        <h3 class="title is-4 has-text-centered" style="margin-top: 35px;">Timestep Scheduling</h3>
+        <div class="has-text-centered" style="margin-top: 15px;">
+          <figure class="time-fig">
+            <div class="time-fig-header">
+              <div class="time-fig-cell time-fig-cell--muted" style="left: 11.5%;">Reference</div>
+              <div class="time-fig-cell" style="left: 40.9%;">Fixed low scale</div>
+              <div class="time-fig-cell" style="left: 64.7%;">Fixed high scale</div>
+              <div class="time-fig-cell" style="left: 88.4%;">Ours (scheduled)</div>
+            </div>
+            <img src="./static/images/time_ablation.jpg" alt="Timestep scheduling: reference, fixed low scale, fixed high scale, and our scheduled modulation">
+          </figure>
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            Early denoising steps fix global structure; later steps add texture and style. We linearly increase both
+            \(s_{hf}\) and \(s_{lf}\) over time: a fixed low scale fails to transfer fine stylistic detail, while a
+            fixed high scale leaks too much structure. Our scheduled modulation lets the model first establish the
+            correct global layout, then sharpen attention onto the reference for fine-grained style.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Method -->
+    <!-- Modulation Scale Effect (interactive knob) -->
+    <div class="columns is-centered" style="margin-top: 50px;">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Controlling the Style&ndash;Content Tradeoff</h2>
+        <div class="content has-text-justified" style="margin-top: 15px;">
+          <p>
+            Our frequency-aware modulation gives a continuous handle on how strongly the reference style is
+            transferred. Increasing \(s_{lf}\) amplifies the reference's low-frequency components in shared
+            attention, progressively pulling more of its visual style into the generated image while preserving
+            the target prompt. <b>Drag the slider</b> below to explore this effect on a single reference and
+            target prompt.
+          </p>
+        </div>
+
+        <div class="knob-widget" id="knob-slf-1">
+          <div class="knob-references" role="tablist" aria-label="Reference image selector">
+            <button type="button" class="knob-ref-thumb is-active"
+                    data-base="./static/images/control_knob_1"
+                    data-count="24"
+                    data-values="0.60,0.68,0.75,0.82,0.90,0.93,0.96,0.99,1.03,1.06,1.09,1.12,1.15,1.18,1.22,1.25,1.28,1.31,1.34,1.37,1.41,1.44,1.47,1.50"
+                    aria-label="Reference 1">
+              <img src="./static/images/control_knob_1/reference.jpg" alt="">
+            </button>
+            <button type="button" class="knob-ref-thumb"
+                    data-base="./static/images/control_knob_2"
+                    data-count="24"
+                    data-values="0.60,0.68,0.75,0.82,0.90,0.93,0.96,0.99,1.03,1.06,1.09,1.12,1.15,1.18,1.22,1.25,1.28,1.31,1.34,1.37,1.41,1.44,1.47,1.50"
+                    aria-label="Reference 2">
+              <img src="./static/images/control_knob_2/reference.jpg" alt="">
+            </button>
+            <button type="button" class="knob-ref-thumb"
+                    data-base="./static/images/control_knob_3"
+                    data-count="24"
+                    data-values="0.60,0.68,0.75,0.82,0.90,0.93,0.96,0.99,1.03,1.06,1.09,1.12,1.15,1.18,1.22,1.25,1.28,1.31,1.34,1.37,1.41,1.44,1.47,1.50"
+                    aria-label="Reference 3">
+              <img src="./static/images/control_knob_3/reference.jpg" alt="">
+            </button>
+          </div>
+          <p class="knob-references-hint">Click a reference image to switch examples.</p>
+          <div class="knob-images">
+            <figure class="knob-image">
+              <img class="knob-reference" src="./static/images/control_knob_1/reference.jpg" alt="Reference image">
+              <figcaption>Reference</figcaption>
+            </figure>
+            <figure class="knob-image">
+              <img class="knob-output" src="./static/images/control_knob_1/output_01.jpg" alt="Generated output as a function of s_lf">
+              <figcaption>Generated output</figcaption>
+            </figure>
+          </div>
+          <div class="knob-control">
+            <label class="knob-label" for="knob-slf-1-slider">
+              \(s_{lf}\) = <span class="knob-value">0.60</span>
+            </label>
+            <input type="range" class="knob-slider" id="knob-slf-1-slider"
+                   min="0" max="23" step="1" value="0" aria-label="Low-frequency scale s_lf">
+            <div class="knob-axis">
+              <span>weaker style transfer</span>
+              <span>stronger style transfer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--/ Modulation Scale Effect (interactive knob) -->
+    <!-- Comparisons -->
+    <div class="columns is-centered" style="margin-top: 60px;">
+      <div class="column is-full-width">
+        <h2 class="title is-3 has-text-centered">Comparisons</h2>
+        <div class="content has-text-centered" style="margin-top: 30px;">
+          <div class="image-carousel image-carousel--comparison" id="carousel-comparisons">
+            <button type="button" class="carousel-nav carousel-prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+            <div class="carousel-track-container">
+              <div class="carousel-track">
+        <div class="carousel-slide comparison-slide" data-caption="Crossing the Delaware — reference: Washington crossing the Delaware">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/delaware/reference.jpg" alt="Reference image: Washington crossing the Delaware">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A lighthouse on a snowy shore</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/ours_1.jpg" alt="Ours result 1 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/alignedgen_1.jpg" alt="AlignedGen result 1 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/stylealigned_1.jpg" alt="StyleAligned result 1 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/ip_adapter_1.jpg" alt="IPAdapter result 1 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/blora_1.jpg" alt="B-LoRA result 1 for Crossing the Delaware"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A top down view of a pond with two ducks swimming</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/ours_2.jpg" alt="Ours result 2 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/alignedgen_2.jpg" alt="AlignedGen result 2 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/stylealigned_2.jpg" alt="StyleAligned result 2 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/ip_adapter_2.jpg" alt="IPAdapter result 2 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/blora_2.jpg" alt="B-LoRA result 2 for Crossing the Delaware"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A wooden cottage in a forest clearing</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/ours_3.jpg" alt="Ours result 3 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/alignedgen_3.jpg" alt="AlignedGen result 3 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/stylealigned_3.jpg" alt="StyleAligned result 3 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/ip_adapter_3.jpg" alt="IPAdapter result 3 for Crossing the Delaware"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/delaware/blora_3.jpg" alt="B-LoRA result 3 for Crossing the Delaware"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Vitruvian man — reference: The Vitruvian Man">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/vitruvian/reference.jpg" alt="Reference image: The Vitruvian Man">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A telescope</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/ours_1.jpg" alt="Ours result 1 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/alignedgen_1.jpg" alt="AlignedGen result 1 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/stylealigned_1.jpg" alt="StyleAligned result 1 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/ip_adapter_1.jpg" alt="IPAdapter result 1 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/blora_1.jpg" alt="B-LoRA result 1 for Vitruvian man"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">An airplane</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/ours_2.jpg" alt="Ours result 2 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/alignedgen_2.jpg" alt="AlignedGen result 2 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/stylealigned_2.jpg" alt="StyleAligned result 2 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/ip_adapter_2.jpg" alt="IPAdapter result 2 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/blora_2.jpg" alt="B-LoRA result 2 for Vitruvian man"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A steam boat</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/ours_3.jpg" alt="Ours result 3 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/alignedgen_3.jpg" alt="AlignedGen result 3 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/stylealigned_3.jpg" alt="StyleAligned result 3 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/ip_adapter_3.jpg" alt="IPAdapter result 3 for Vitruvian man"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/vitruvian/blora_3.jpg" alt="B-LoRA result 3 for Vitruvian man"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Persian miniature — reference: A Persian court scene">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/iran/reference.jpg" alt="Reference image: A Persian court scene">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">The taj mahal</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/ours_1.jpg" alt="Ours result 1 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/alignedgen_1.jpg" alt="AlignedGen result 1 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/stylealigned_1.jpg" alt="StyleAligned result 1 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/ip_adapter_1.jpg" alt="IPAdapter result 1 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/blora_1.jpg" alt="B-LoRA result 1 for Persian miniature"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A busy pizza restaurant</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/ours_2.jpg" alt="Ours result 2 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/alignedgen_2.jpg" alt="AlignedGen result 2 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/stylealigned_2.jpg" alt="StyleAligned result 2 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/ip_adapter_2.jpg" alt="IPAdapter result 2 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/blora_2.jpg" alt="B-LoRA result 2 for Persian miniature"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A majestic lion resting on a rock</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/ours_3.jpg" alt="Ours result 3 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/alignedgen_3.jpg" alt="AlignedGen result 3 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/stylealigned_3.jpg" alt="StyleAligned result 3 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/ip_adapter_3.jpg" alt="IPAdapter result 3 for Persian miniature"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/iran/blora_3.jpg" alt="B-LoRA result 3 for Persian miniature"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Modernist village — reference: A colorful village landscape">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/abstract/reference.jpg" alt="Reference image: A colorful village landscape">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A sailboat on the ocean</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/ours_1.jpg" alt="Ours result 1 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/alignedgen_1.jpg" alt="AlignedGen result 1 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/stylealigned_1.jpg" alt="StyleAligned result 1 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/ip_adapter_1.jpg" alt="IPAdapter result 1 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/blora_1.jpg" alt="B-LoRA result 1 for Modernist village"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A monkey swinging from a tree branch in the jungle</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/ours_2.jpg" alt="Ours result 2 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/alignedgen_2.jpg" alt="AlignedGen result 2 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/stylealigned_2.jpg" alt="StyleAligned result 2 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/ip_adapter_2.jpg" alt="IPAdapter result 2 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/blora_2.jpg" alt="B-LoRA result 2 for Modernist village"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A dolphin jumping out of the water</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/ours_3.jpg" alt="Ours result 3 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/alignedgen_3.jpg" alt="AlignedGen result 3 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/stylealigned_3.jpg" alt="StyleAligned result 3 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/ip_adapter_3.jpg" alt="IPAdapter result 3 for Modernist village"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/abstract/blora_3.jpg" alt="B-LoRA result 3 for Modernist village"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Palette-knife woman — reference: A woman with an umbrella">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/umbrella/reference.jpg" alt="Reference image: A woman with an umbrella">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">New york skyline</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/ours_1.jpg" alt="Ours result 1 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/alignedgen_1.jpg" alt="AlignedGen result 1 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/stylealigned_1.jpg" alt="StyleAligned result 1 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/ip_adapter_1.jpg" alt="IPAdapter result 1 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/blora_1.jpg" alt="B-LoRA result 1 for Palette-knife woman"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A ice skater performing a jump</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/ours_2.jpg" alt="Ours result 2 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/alignedgen_2.jpg" alt="AlignedGen result 2 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/stylealigned_2.jpg" alt="StyleAligned result 2 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/ip_adapter_2.jpg" alt="IPAdapter result 2 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/blora_2.jpg" alt="B-LoRA result 2 for Palette-knife woman"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A woman reading a book in a park</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/ours_3.jpg" alt="Ours result 3 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/alignedgen_3.jpg" alt="AlignedGen result 3 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/stylealigned_3.jpg" alt="StyleAligned result 3 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/ip_adapter_3.jpg" alt="IPAdapter result 3 for Palette-knife woman"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/umbrella/blora_3.jpg" alt="B-LoRA result 3 for Palette-knife woman"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Impressionist bazaar — reference: A bustling market scene">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/bazaar/reference.jpg" alt="Reference image: A bustling market scene">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">The eiffel tower</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/ours_1.jpg" alt="Ours result 1 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/alignedgen_1.jpg" alt="AlignedGen result 1 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/stylealigned_1.jpg" alt="StyleAligned result 1 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/ip_adapter_1.jpg" alt="IPAdapter result 1 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/blora_1.jpg" alt="B-LoRA result 1 for Impressionist bazaar"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A man fishing by a river</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/ours_2.jpg" alt="Ours result 2 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/alignedgen_2.jpg" alt="AlignedGen result 2 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/stylealigned_2.jpg" alt="StyleAligned result 2 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/ip_adapter_2.jpg" alt="IPAdapter result 2 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/blora_2.jpg" alt="B-LoRA result 2 for Impressionist bazaar"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A majestic eagle soaring in the sky</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/ours_3.jpg" alt="Ours result 3 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/alignedgen_3.jpg" alt="AlignedGen result 3 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/stylealigned_3.jpg" alt="StyleAligned result 3 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/ip_adapter_3.jpg" alt="IPAdapter result 3 for Impressionist bazaar"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bazaar/blora_3.jpg" alt="B-LoRA result 3 for Impressionist bazaar"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Watercolor beach — reference: People relaxing at the beach">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/beach/reference.jpg" alt="Reference image: People relaxing at the beach">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">Two roman soldiers fighting</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/ours_1.jpg" alt="Ours result 1 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/alignedgen_1.jpg" alt="AlignedGen result 1 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/stylealigned_1.jpg" alt="StyleAligned result 1 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/ip_adapter_1.jpg" alt="IPAdapter result 1 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/blora_1.jpg" alt="B-LoRA result 1 for Watercolor beach"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">The tower of pisa</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/ours_2.jpg" alt="Ours result 2 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/alignedgen_2.jpg" alt="AlignedGen result 2 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/stylealigned_2.jpg" alt="StyleAligned result 2 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/ip_adapter_2.jpg" alt="IPAdapter result 2 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/blora_2.jpg" alt="B-LoRA result 2 for Watercolor beach"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">The statue of liberty</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/ours_3.jpg" alt="Ours result 3 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/alignedgen_3.jpg" alt="AlignedGen result 3 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/stylealigned_3.jpg" alt="StyleAligned result 3 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/ip_adapter_3.jpg" alt="IPAdapter result 3 for Watercolor beach"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/beach/blora_3.jpg" alt="B-LoRA result 3 for Watercolor beach"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Ink-and-watercolor park — reference: People relaxing outdoors">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/park/reference.jpg" alt="Reference image: People relaxing outdoors">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A roman emperor in a park</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/ours_1.jpg" alt="Ours result 1 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/alignedgen_1.jpg" alt="AlignedGen result 1 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/stylealigned_1.jpg" alt="StyleAligned result 1 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/ip_adapter_1.jpg" alt="IPAdapter result 1 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/blora_1.jpg" alt="B-LoRA result 1 for Ink-and-watercolor park"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A traffic jam on a highway</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/ours_2.jpg" alt="Ours result 2 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/alignedgen_2.jpg" alt="AlignedGen result 2 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/stylealigned_2.jpg" alt="StyleAligned result 2 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/ip_adapter_2.jpg" alt="IPAdapter result 2 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/blora_2.jpg" alt="B-LoRA result 2 for Ink-and-watercolor park"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A pirate with a parrot on his shoulder at the helm of his ship</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/ours_3.jpg" alt="Ours result 3 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/alignedgen_3.jpg" alt="AlignedGen result 3 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/stylealigned_3.jpg" alt="StyleAligned result 3 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/ip_adapter_3.jpg" alt="IPAdapter result 3 for Ink-and-watercolor park"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/park/blora_3.jpg" alt="B-LoRA result 3 for Ink-and-watercolor park"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Minimalist ballerina — reference: A ballerina">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/ballet/reference.jpg" alt="Reference image: A ballerina">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A jazz musician playing saxophone on stage</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/ours_1.jpg" alt="Ours result 1 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/alignedgen_1.jpg" alt="AlignedGen result 1 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/stylealigned_1.jpg" alt="StyleAligned result 1 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/ip_adapter_1.jpg" alt="IPAdapter result 1 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/blora_1.jpg" alt="B-LoRA result 1 for Minimalist ballerina"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A soccer player kicking a ball</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/ours_2.jpg" alt="Ours result 2 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/alignedgen_2.jpg" alt="AlignedGen result 2 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/stylealigned_2.jpg" alt="StyleAligned result 2 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/ip_adapter_2.jpg" alt="IPAdapter result 2 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/blora_2.jpg" alt="B-LoRA result 2 for Minimalist ballerina"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A hot air balloon flying over mountains</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/ours_3.jpg" alt="Ours result 3 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/alignedgen_3.jpg" alt="AlignedGen result 3 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/stylealigned_3.jpg" alt="StyleAligned result 3 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/ip_adapter_3.jpg" alt="IPAdapter result 3 for Minimalist ballerina"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/ballet/blora_3.jpg" alt="B-LoRA result 3 for Minimalist ballerina"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Pen-and-ink portrait — reference: A portrait of a woman">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/pen_sketch/reference.jpg" alt="Reference image: A portrait of a woman">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A portrait of a cat</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/ours_1.jpg" alt="Ours result 1 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/alignedgen_1.jpg" alt="AlignedGen result 1 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/stylealigned_1.jpg" alt="StyleAligned result 1 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/ip_adapter_1.jpg" alt="IPAdapter result 1 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/blora_1.jpg" alt="B-LoRA result 1 for Pen-and-ink portrait"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A palm tree</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/ours_2.jpg" alt="Ours result 2 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/alignedgen_2.jpg" alt="AlignedGen result 2 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/stylealigned_2.jpg" alt="StyleAligned result 2 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/ip_adapter_2.jpg" alt="IPAdapter result 2 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/blora_2.jpg" alt="B-LoRA result 2 for Pen-and-ink portrait"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A steam train</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/ours_3.jpg" alt="Ours result 3 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/alignedgen_3.jpg" alt="AlignedGen result 3 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/stylealigned_3.jpg" alt="StyleAligned result 3 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/ip_adapter_3.jpg" alt="IPAdapter result 3 for Pen-and-ink portrait"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/pen_sketch/blora_3.jpg" alt="B-LoRA result 3 for Pen-and-ink portrait"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Crayon bear — reference: A cute bear drawing">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/crayon_bear/reference.jpg" alt="Reference image: A cute bear drawing">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A marathon runner</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/ours_1.jpg" alt="Ours result 1 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/alignedgen_1.jpg" alt="AlignedGen result 1 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/stylealigned_1.jpg" alt="StyleAligned result 1 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/ip_adapter_1.jpg" alt="IPAdapter result 1 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/blora_1.jpg" alt="B-LoRA result 1 for Crayon bear"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A fruit basket on a table</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/ours_2.jpg" alt="Ours result 2 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/alignedgen_2.jpg" alt="AlignedGen result 2 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/stylealigned_2.jpg" alt="StyleAligned result 2 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/ip_adapter_2.jpg" alt="IPAdapter result 2 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/blora_2.jpg" alt="B-LoRA result 2 for Crayon bear"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">Two kittens playing</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/ours_3.jpg" alt="Ours result 3 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/alignedgen_3.jpg" alt="AlignedGen result 3 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/stylealigned_3.jpg" alt="StyleAligned result 3 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/ip_adapter_3.jpg" alt="IPAdapter result 3 for Crayon bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/crayon_bear/blora_3.jpg" alt="B-LoRA result 3 for Crayon bear"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Pencil-sketch bear — reference: A cute bear sketch">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/poo/reference.jpg" alt="Reference image: A cute bear sketch">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A cute puppy</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/ours_1.jpg" alt="Ours result 1 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/alignedgen_1.jpg" alt="AlignedGen result 1 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/stylealigned_1.jpg" alt="StyleAligned result 1 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/ip_adapter_1.jpg" alt="IPAdapter result 1 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/blora_1.jpg" alt="B-LoRA result 1 for Pencil-sketch bear"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A football helmet sketch</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/ours_2.jpg" alt="Ours result 2 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/alignedgen_2.jpg" alt="AlignedGen result 2 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/stylealigned_2.jpg" alt="StyleAligned result 2 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/ip_adapter_2.jpg" alt="IPAdapter result 2 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/blora_2.jpg" alt="B-LoRA result 2 for Pencil-sketch bear"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A wine glass sketch</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/ours_3.jpg" alt="Ours result 3 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/alignedgen_3.jpg" alt="AlignedGen result 3 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/stylealigned_3.jpg" alt="StyleAligned result 3 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/ip_adapter_3.jpg" alt="IPAdapter result 3 for Pencil-sketch bear"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/poo/blora_3.jpg" alt="B-LoRA result 3 for Pencil-sketch bear"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Plush-toy cottage — reference: A cozy cottage">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/house/reference.jpg" alt="Reference image: A cozy cottage">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A grand piano</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/ours_1.jpg" alt="Ours result 1 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/alignedgen_1.jpg" alt="AlignedGen result 1 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/stylealigned_1.jpg" alt="StyleAligned result 1 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/ip_adapter_1.jpg" alt="IPAdapter result 1 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/blora_1.jpg" alt="B-LoRA result 1 for Plush-toy cottage"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">An old television</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/ours_2.jpg" alt="Ours result 2 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/alignedgen_2.jpg" alt="AlignedGen result 2 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/stylealigned_2.jpg" alt="StyleAligned result 2 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/ip_adapter_2.jpg" alt="IPAdapter result 2 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/blora_2.jpg" alt="B-LoRA result 2 for Plush-toy cottage"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A snowman</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/ours_3.jpg" alt="Ours result 3 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/alignedgen_3.jpg" alt="AlignedGen result 3 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/stylealigned_3.jpg" alt="StyleAligned result 3 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/ip_adapter_3.jpg" alt="IPAdapter result 3 for Plush-toy cottage"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/house/blora_3.jpg" alt="B-LoRA result 3 for Plush-toy cottage"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Medieval bed — reference: A man lying on a bed">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/bed/reference.jpg" alt="Reference image: A man lying on a bed">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A man eating pizza</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/ours_1.jpg" alt="Ours result 1 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/alignedgen_1.jpg" alt="AlignedGen result 1 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/stylealigned_1.jpg" alt="StyleAligned result 1 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/ip_adapter_1.jpg" alt="IPAdapter result 1 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/blora_1.jpg" alt="B-LoRA result 1 for Medieval bed"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">Two knights playing chess</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/ours_2.jpg" alt="Ours result 2 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/alignedgen_2.jpg" alt="AlignedGen result 2 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/stylealigned_2.jpg" alt="StyleAligned result 2 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/ip_adapter_2.jpg" alt="IPAdapter result 2 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/blora_2.jpg" alt="B-LoRA result 2 for Medieval bed"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A clown dancing</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/ours_3.jpg" alt="Ours result 3 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/alignedgen_3.jpg" alt="AlignedGen result 3 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/stylealigned_3.jpg" alt="StyleAligned result 3 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/ip_adapter_3.jpg" alt="IPAdapter result 3 for Medieval bed"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/bed/blora_3.jpg" alt="B-LoRA result 3 for Medieval bed"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="carousel-slide comparison-slide" data-caption="Color-pencil kiss — reference: A boy and a girl kissing">
+          <div class="comparison-ref">
+            <img loading="lazy" src="./static/images/comparisons/kiss/reference.jpg" alt="Reference image: A boy and a girl kissing">
+            <div class="comparison-ref-label">Reference</div>
+          </div>
+          <div class="comparison-grid">
+            <div class="comparison-headers">
+              <div>Ours</div>
+              <div>AlignedGen</div>
+              <div>StyleAligned</div>
+              <div>IPAdapter</div>
+              <div>B-LoRA</div>
+            </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A woman playing guitar</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/ours_1.jpg" alt="Ours result 1 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/alignedgen_1.jpg" alt="AlignedGen result 1 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/stylealigned_1.jpg" alt="StyleAligned result 1 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/ip_adapter_1.jpg" alt="IPAdapter result 1 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/blora_1.jpg" alt="B-LoRA result 1 for Color-pencil kiss"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">The seattle needle</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/ours_2.jpg" alt="Ours result 2 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/alignedgen_2.jpg" alt="AlignedGen result 2 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/stylealigned_2.jpg" alt="StyleAligned result 2 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/ip_adapter_2.jpg" alt="IPAdapter result 2 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/blora_2.jpg" alt="B-LoRA result 2 for Color-pencil kiss"></div>
+            </div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-prompt">A cat playing with a ball of yarn</div>
+            <div class="comparison-results">
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/ours_3.jpg" alt="Ours result 3 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/alignedgen_3.jpg" alt="AlignedGen result 3 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/stylealigned_3.jpg" alt="StyleAligned result 3 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/ip_adapter_3.jpg" alt="IPAdapter result 3 for Color-pencil kiss"></div>
+              <div class="comparison-cell"><img loading="lazy" src="./static/images/comparisons/kiss/blora_3.jpg" alt="B-LoRA result 3 for Color-pencil kiss"></div>
+            </div>
+          </div>
+          </div>
+        </div>
+              </div>
+            </div>
+            <button type="button" class="carousel-nav carousel-next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+            <div class="carousel-dots" id="carousel-comparisons-dots"></div>
+            <p class="figure-caption carousel-caption">""</p>
+          </div>
+        </div>
+        <div class="content has-text-justified" style="margin-top: 20px;">
+          <p>
+            For each reference image we generate three target prompts and compare <b>Ours</b> against
+            <b>AlignedGen</b>, <b>StyleAligned</b>, <b>IPAdapter</b>, and <b>B-LoRA</b>. Use the arrows above to
+            browse different references. Our approach achieves faithful style transfer while maintaining structural
+            coherence, avoiding (irrelevant to the target prompt) content leakage from the reference into the
+            generated image.
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Comparisons. -->
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            Website template based on the <a href="https://nerfies.github.io/">Nerfies</a> project page.
+            If you want to reuse the original
+            <a href="https://github.com/nerfies/nerfies.github.io">source code</a>,
+            please credit them appropriately.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- MathJax for inline math in the body -->
+<script>
+  MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+
+</body>
+</html>
