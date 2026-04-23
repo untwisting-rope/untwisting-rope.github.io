@@ -495,6 +495,15 @@ body {
    4-up slide image cramped into ~200px. Shrink the arrows, tuck them to
    the edges, and give the slide more horizontal room. */
 @media (max-width: 768px) {
+  /* Cap the widget at a comfortable share of the viewport so it doesn't
+     bleed to the screen edges, regardless of what the surrounding
+     containers/flex layout do. */
+  .image-carousel--comparison {
+    max-width: 88vw;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .image-carousel--comparison .carousel-nav {
     width: 30px;
     height: 30px;
@@ -509,6 +518,9 @@ body {
 }
 
 @media (max-width: 480px) {
+  .image-carousel--comparison {
+    max-width: 84vw;
+  }
   .image-carousel--comparison .carousel-nav {
     width: 26px;
     height: 26px;
